@@ -42,13 +42,14 @@ variable "availability_zone" {
   description = "Availability zone"
 
   type = string
+
   validation {
     condition = contains(
-      ["S1", "S2"],
+      ["N1", "N2", "S1", "S2"],
       upper(var.availability_zone)
     )
 
-    error_message = "availability_zone must be S1 or S2."
+    error_message = "availability_zone must be one of N1, N2, S1, or S2."
   }
 }
 
