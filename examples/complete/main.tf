@@ -11,7 +11,8 @@ module "object_storage" {
 
   versioning = true
 
-  object_locking = false
+  object_locking            = true
+  object_lock_validity_days = 90
 
   tags = {
     Environment = "production"
