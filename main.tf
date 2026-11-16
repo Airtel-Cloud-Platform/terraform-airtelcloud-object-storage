@@ -9,5 +9,7 @@ resource "airtelcloud_storage_bucket" "this" {
   versioning     = var.versioning
   object_locking = var.object_locking
 
+  object_lock_validity_days = var.object_lock_validity_days
+
   tags = var.tags
 }

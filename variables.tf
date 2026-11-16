@@ -25,17 +25,19 @@ variable "replication_type" {
 }
 
 variable "replication_tag" {
-  description = "Replication tag"
+  description = "Replication tag. Required by the provider for every replication_type."
 
-  type    = string
-  default = null
+  type = string
+
   validation {
-    condition = (
-      var.replication_type == "Local" ||
-      (var.replication_tag != null && trim(var.replication_tag, " ") != "")
-    )
+    condition = contains([
+      "north_N1", "north_N2", "north_N1_N2", "north_N2_N1",
+      "north_south_N1_S1", "north_south_N2_S2",
+      "south_S1", "south_S2", "south_S1_S2", "south_S2_S1",
+      "south_north_S1_N1", "south_north_S2_N2",
+    ], var.replication_tag)
 
-    error_message = "replication_tag is required for replicated bucket types."
+    error_message = "Invalid replication_tag."
   }
 }
 variable "availability_zone" {
@@ -65,6 +67,18 @@ variable "object_locking" {
 
   type    = bool
   default = false
+}
+
+variable "object_lock_validity_days" {
+  description = "Object lock retention in days (config.objLockValidityDays). Only sent when object_locking is true; the provider defaults to 30 when unset. Forces replacement."
+
+  type    = number
+  default = null
+
+  validation {
+    condition     = var.object_lock_validity_days == null || (var.object_lock_validity_days >= 1 && floor(var.object_lock_validity_days) == var.object_lock_validity_days)
+    error_message = "object_lock_validity_days must be a whole number >= 1."
+  }
 }
 
 variable "tags" {

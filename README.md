@@ -12,7 +12,7 @@ The module manages S3-compatible object storage buckets with support for replica
 * Supports replication within the same region.
 * Supports replication across regions.
 * Supports object versioning.
-* Supports object locking.
+* Supports object locking with configurable retention (`object_lock_validity_days`).
 * Supports bucket tags.
 * Validates bucket name length.
 * Validates supported replication types.
@@ -54,8 +54,9 @@ module "storage_bucket" {
   replication_tag   = "south_S1_S2"
   availability_zone = "S1"
 
-  versioning     = true
-  object_locking = true
+  versioning                = true
+  object_locking            = true
+  object_lock_validity_days = 90
 
   tags = {
     Environment = "production"
@@ -309,7 +310,16 @@ To disable object locking:
 object_locking = false
 ```
 
-> **Note:** The module does not expose a separate `object_lock_validity_days` input.
+### Object Lock Validity
+
+The `object_lock_validity_days` argument sets the object lock retention in days (`config.objLockValidityDays`).
+
+It is only sent when `object_locking = true`. If omitted, the provider uses `30`. Changing it forces replacement.
+
+```hcl
+object_locking            = true
+object_lock_validity_days = 90
+```
 
 ## Tags
 
@@ -342,10 +352,11 @@ If no tags are specified, the module uses an empty map.
 | ------------------- | ---------------------------------------------------------------------------------------------- | ------------- | -------- | ------- |
 | `name`              | Name of the bucket. Must contain at least 3 characters after trimming spaces.                  | `string`      | Yes      | -       |
 | `replication_type`  | Replication type for the bucket.                                                               | `string`      | Yes      | -       |
-| `replication_tag`   | Replication configuration tag. Required for replicated bucket types.                           | `string`      | No       | `null`  |
+| `replication_tag`   | Replication configuration tag. Required by the provider for every replication type.            | `string`      | Yes      | -       |
 | `availability_zone` | Availability zone associated with the bucket. Supported values are `N1`, `N2`, `S1`, and `S2`. | `string`      | Yes      | -       |
 | `versioning`        | Whether object versioning is enabled.                                                          | `bool`        | No       | `false` |
 | `object_locking`    | Whether object locking is enabled.                                                             | `bool`        | No       | `false` |
+| `object_lock_validity_days` | Object lock retention in days. Only used when `object_locking` is `true`; provider default is `30`. | `number` | No | `null` |
 | `tags`              | Map of tags to assign to the bucket.                                                           | `map(string)` | No       | `{}`    |
 
 ## Input Details
@@ -384,9 +395,7 @@ replication_type = "Local"
 
 Specifies the replication configuration.
 
-The module allows this input to be omitted for `Local` replication.
-
-For replicated bucket types, the value must be provided and cannot be empty.
+Required for every `replication_type`, including `Local` (for example `south_S1`). The module validates it against the provider's allowed values.
 
 Example:
 
@@ -558,14 +567,13 @@ to verify that the Terraform configuration matches the existing bucket.
 * The bucket `name` must contain at least 3 characters after trimming spaces.
 * The provider requires the bucket name to be globally unique.
 * `replication_type` must be one of `Local`, `Replicated within region`, or `Replicated across region`.
-* `replication_tag` is optional for `Local` replication.
-* `replication_tag` is required for replicated bucket types and cannot be empty.
+* `replication_tag` is required for every replication type, including `Local`.
 * The `replication_tag` must be compatible with the selected `replication_type`.
 * The module supports availability zones `N1`, `N2`, `S1`, and `S2`.
 * Availability zone validation is case-insensitive.
 * `versioning` defaults to `false`.
 * `object_locking` defaults to `false`.
-* The module does not expose `object_lock_validity_days`.
+* `object_lock_validity_days` is only used when `object_locking = true`; the provider defaults it to `30`.
 * `tags` defaults to an empty map.
 * The module provides individual bucket outputs as well as a complete `bucket` object.
 * Existing buckets can be imported using their bucket ID.
